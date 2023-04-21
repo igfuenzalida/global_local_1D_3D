@@ -1,0 +1,905 @@
+#! /usr/bin/env python
+
+DEBUT(PAR_LOT='NON')
+
+import numpy as np
+import pdb
+for root, dirs, files, in os.walk('opt/aster'):
+	for name in dirs:
+		sys.path.append(os.path.join(root,name))
+
+from Utilitai.partition import *
+# import Cata
+# from Cata import *
+# from Cata.Commands import *
+# import N_CO
+# from N_CO import *
+# from Accas import _F
+import pdb
+
+
+def pause():
+    programPause = input("Press the <ENTER> key to continue...")
+
+def ReprAster2PythonLin (vect,GAMMA) :
+
+
+    vect_x = vect.EXTR_COMP('DX',[GAMMA],1).valeurs;
+    vect_y = vect.EXTR_COMP('DY',[GAMMA],1).valeurs;
+    vect_z = vect.EXTR_COMP('DZ',[GAMMA],1).valeurs;
+    vect_rx = vect.EXTR_COMP('DRX',[GAMMA],1).valeurs;
+    vect_ry = vect.EXTR_COMP('DRY',[GAMMA],1).valeurs;
+    vect_rz = vect.EXTR_COMP('DRZ',[GAMMA],1).valeurs;
+
+    vector_x=vect_x.transpose()
+    vector_y=vect_y.transpose()
+    vector_z=vect_z.transpose()
+    vector_rx=vect_rx.transpose()
+    vector_ry=vect_ry.transpose()
+    vector_rz=vect_rz.transpose()
+
+    vect_alt=np.zeros((6*len(vector_x),1),float)
+
+    for n in range(0,len(vect_x)) :
+
+        vect_alt[6*n,]=vector_x[n]
+        vect_alt[6*n+1,]=vector_y[n]
+        vect_alt[6*n+2,]=vector_z[n]
+        vect_alt[6*n+3,]=vector_rx[n]
+        vect_alt[6*n+4,]=vector_ry[n]
+        vect_alt[6*n+5,]=vector_rz[n]
+
+    return vect_alt
+
+def ReprAster2Python3D (vect,GAMMA) :
+
+
+    vect_x = vect.EXTR_COMP('DX',[GAMMA],1).valeurs;
+    vect_y = vect.EXTR_COMP('DY',[GAMMA],1).valeurs;
+    vect_z = vect.EXTR_COMP('DZ',[GAMMA],1).valeurs;
+
+
+    vector_x=vect_x.transpose()
+    vector_y=vect_y.transpose()
+    vector_z=vect_z.transpose()
+
+
+    vect_alt=np.zeros((3*len(vector_x),1),float)
+
+    for n in range(0,len(vect_x)) :
+
+    	vect_alt[3*n,]=vector_x[n]
+    	vect_alt[3*n+1,]=vector_y[n]
+    	vect_alt[3*n+2,]=vector_z[n]
+
+
+
+    # pdb.set_trace()
+    return vect_alt;
+
+def calc_depl (depl,GAMMA,mailpyl,lista) :
+
+	deltaX=depl[0]
+	deltaY=depl[1]
+	deltaZ=depl[2]
+	deltarx=depl[3]
+	deltary=depl[4]
+	deltarz=depl[5]
+	# print(deltaX)
+	# print(deltaZ)
+	print(deltarx)
+	# pause()
+	# deltary=0.01
+
+	# Calcul de la matrice de masse condense sur le bord de la zone de couplage
+	# Groupe de mailles 'GAMMA'
+	# La variable 'm_gamma' contient un tableau listant le numero des mailles du groupe 'GAMMA'
+	# m_gamma =  mailpyl['gma'][GAMMA];
+	# Groupe de noeuds 'GAMMA'
+	# La variable 'n_gamma' contient un tableau listant le numero des noeuds du groupe 'GAMMA'
+	n_gamma =  sorted(mailpyl['gno'][GAMMA]);
+	# Table de connectivite
+	# table_connec = mailpyl['co'];
+	# Coordonnees des noeuds du maillage
+	coord = mailpyl['cn'];
+	# Nombre de mailles de la frontiere 'GAMMA'
+	# nb_mailles = len(m_gamma);
+	# Nombre de noeuds de la frontiere 'GAMMA'
+	nb_noeuds = len(n_gamma);
+	# Numerotation des noeuds
+	num = {n_gamma[n] : n for n in range(nb_noeuds)};
+
+	centroideZ=0.5*(max(coord[:,2])+min(coord[:,2]))
+	centroideX=0.5*(max(coord[:,0])+min(coord[:,0]))
+	centroideY=0.5*(max(coord[:,1])+min(coord[:,1]))
+
+
+	# On boucle sur l'ensemble des mailles de la frontiere 'GAMMA'
+	for m in range(nb_noeuds) :
+
+
+		# On recupere les noeuds correspondant a la maille m
+		# On recupere les coordonnees des noeuds i et j
+		[xi, yi, zi] = coord[n_gamma[m]];
+
+
+		z_rel=zi-centroideZ
+		y_rel=yi-centroideY
+		x_rel=xi-centroideX
+
+
+
+		#para giro en Y
+
+		rr_y=abs(z_rel*np.sin(deltary)/np.sin(np.pi/2-deltary/2))
+
+		if z_rel>=0 :
+
+			if deltary>=0 :
+
+
+				DX_ry=rr_y*abs(np.cos(deltary/2))
+				DZ_ry=-rr_y*abs(np.sin(deltary/2))
+	            # DZ_r=abs(z_rel)*(1-np.cos(deltary))*0
+			else :
+
+				DX_ry=-rr_y*abs(np.cos(deltary/2))#np.sin(deltary)
+				DZ_ry=-rr_y*abs(np.sin(deltary/2))
+
+		else :
+
+			if deltary>=0 :
+
+				DX_ry=-rr_y*abs(np.cos(deltary/2))
+				DZ_ry=rr_y*abs(np.sin(deltary/2))
+	            # DZ_r=abs(z_rel)*(1-np.cos(deltary))*0
+			else :
+
+				DX_ry=rr_y*abs(np.cos(deltary/2))#np.sin(deltary)
+				DZ_ry=rr_y*abs(np.sin(deltary/2))
+
+		# para giro en X
+
+
+		rr_x=abs((((z_rel)**2)+((y_rel)**2))**(1/2)*np.sin(deltarx)/np.sin(np.pi/2-deltarx/2))
+		#rr_z=abs(y_rel*)
+
+		if y_rel==0:
+			angle_plane=np.pi/2
+		else :
+			angle_plane=np.arctan(abs(z_rel/y_rel))
+
+
+		DYrx=rr_x*abs(np.sin(deltarx/2+angle_plane))
+		DZrx=rr_x*abs(np.cos(deltarx/2+angle_plane))
+
+		DY_rx=0
+		DZ_rx=0
+
+		if z_rel>0:
+
+			if y_rel>0:
+
+				DY_rx=-DYrx*np.sign(deltarx)
+				DZ_rx=DZrx*np.sign(deltarx)
+
+			else :
+
+				DY_rx=-DYrx*np.sign(deltarx)
+				DZ_rx=-DZrx*np.sign(deltarx)
+
+		else :
+
+			if y_rel<0:
+
+				DY_rx=DYrx*np.sign(deltarx)
+				DZ_rx=-DZrx*np.sign(deltarx)
+
+			else :
+
+				DY_rx=DYrx*np.sign(deltarx)
+				DZ_rx=DZrx*np.sign(deltarx)
+
+		#para giro en Z
+
+		rr_z=abs(y_rel*np.sin(deltarz)/np.sin(np.pi/2-deltarz/2))
+
+		if y_rel>=0 :
+
+			if deltarz>=0 :
+
+
+				DX_rz=-rr_z*abs(np.cos(deltarz/2))
+				DY_rz=rr_z*abs(np.sin(deltarz/2))
+	            # DZ_r=abs(z_rel)*(1-np.cos(deltary))*0
+			else :
+
+				DX_rz=rr_z*abs(np.cos(deltarz/2))#np.sin(deltary)
+				DY_rz=rr_z*abs(np.sin(deltarz/2))
+
+		else :
+
+			if deltarz>=0 :
+
+				DX_rz=rr_z*abs(np.cos(deltarz/2))
+				DY_rz=-rr_z*abs(np.sin(deltarz/2))
+	            # DZ_r=abs(z_rel)*(1-np.cos(deltary))*0
+			else :
+
+				DX_rz=-rr_z*abs(np.cos(deltarz/2))#np.sin(deltary)
+				DY_rz=-rr_z*abs(np.sin(deltarz/2))
+
+
+		Dx_tot=deltaX+DX_ry+DX_rz;
+		Dy_tot=deltaY+DY_rx+DY_rz;
+		Dz_tot=deltaZ+DZ_ry+DZ_rx;
+
+		lista.append(_F(NOEUD = ('N%d') %(n_gamma[m]+1) , DX = Dx_tot, DY=Dy_tot, DZ=Dz_tot))
+
+
+	return lista
+
+
+
+
+mesh = LIRE_MAILLAGE(UNITE=20)
+
+mesh_3D = LIRE_MAILLAGE(UNITE=21)
+
+grid = LIRE_MAILLAGE(FORMAT='MED', UNITE=22);
+
+grille  = DEFI_GRILLE ( MAILLAGE=grid);
+
+# mesh_3D = DEFI_GROUP(reuse=mesh_3D,
+#     CREA_GROUP_NO=_F(CRIT_NOEUD='TOUS', GROUP_MA=('GAMMA_der', ), NOM=('GN_der' )),
+#     MAILLAGE=mesh_3D
+# )
+#
+# mesh_3D = DEFI_GROUP(reuse=mesh_3D,
+#     CREA_GROUP_NO=_F(CRIT_NOEUD='TOUS', GROUP_MA=('GAMMA_izq', ), NOM=('GN_izq' )),
+#     MAILLAGE=mesh_3D
+# )
+
+tag=2
+NPS=3
+
+DA=5
+RS=5
+
+Xfiss=750
+Zfiss=1975
+
+#ubicacion centroide seccion
+coord_izq=(500,0,2000)
+coord_der=(1000,0,2000)
+
+#propiedades seccion H
+#A=5680.0
+#Iz=95100000.0
+#Iy=13300000.0
+#Ay=0
+#Jx=154000.0
+
+
+Aitken=1
+
+
+archivo_parc_1 = "/home/nazio/Desktop/Matias/no_intrusivo/salida.txt"
+
+f = open(archivo_parc_1, "r")
+contents = f.readlines()
+f.close()
+
+if tag==1:
+	contents.insert(0, ("iter,error,mu,rn,...LINEAR_ANALYSIS\n"))
+else :
+	contents.insert(0, ("iter,error,mu,rn,...CRACKED_ANALYSIS\n"))
+
+f = open(archivo_parc_1, "w")
+contents = "".join(contents)
+f.write(contents)
+f.close()
+
+maillagel = mesh_3D;
+
+mailpyl = MAIL_PY();
+mailpyl.FromAster(maillagel);
+mailpyl = {'gma':mailpyl.gma, 'gno':mailpyl.gno, 'co':mailpyl.co.data, 'cn':mailpyl.cn, 'corresp':mailpyl.correspondance_noeuds};
+
+#pdb.set_trace()
+#
+maillagel=mailpyl;
+
+GN_izq=mailpyl['gno']['desp_izq']
+
+GN_der=mailpyl['gno']['desp_der']
+
+#pdb.set_trace()
+
+
+model = AFFE_MODELE(AFFE =_F(MODELISATION=('POU_D_E', ),
+                            PHENOMENE='MECANIQUE',
+                            TOUT='OUI'),
+                    MAILLAGE=mesh)
+
+elemprop = AFFE_CARA_ELEM(MODELE=model,
+                          POUTRE=_F(CARA=('H', ),
+                                    GROUP_MA=('resto_portico', 'viga_grieta'),
+                                    SECTION='RECTANGLE',
+                                    VALE=(200.0, )))
+
+#elemprop = AFFE_CARA_ELEM(MODELE=model,
+                          #POUTRE=(_F(CARA=('A', 'IZ', 'IY', 'AY', 'JX'),
+                                     #GROUP_MA=('resto_portico', 'viga_grieta'),
+                                     #SECTION='GENERALE',
+                                     #VALE=(A, Iz, Iy, Ay, Jx))))
+
+mode_3D = AFFE_MODELE(AFFE=_F(MODELISATION=('3D', ),
+                              PHENOMENE='MECANIQUE',
+                              TOUT='OUI'),
+                      MAILLAGE=mesh_3D)
+
+
+
+
+mater = DEFI_MATERIAU(ELAS=_F(E=200000.0,
+                              NU=0.3))
+
+fieldmat = AFFE_MATERIAU(AFFE=_F(MATER=(mater, ),
+                                 TOUT='OUI'),
+                         MODELE=model)
+
+field_3D = AFFE_MATERIAU(AFFE=_F(MATER=(mater, ),
+                                 TOUT='OUI'),
+                         MAILLAGE=mesh_3D)
+
+error = 1
+tol = 1e-6
+
+#print(Pn)
+#pause()
+#print(Pn)
+#Pn=Pn[:,1]
+rn_izq=np.zeros((6,1),'float')
+rn_der=np.zeros((6,1),'float')
+Pn_der=np.zeros((6,1),'float')
+Pn_izq=np.zeros((6,1),'float')
+
+#print(rn_izq)
+#print(rn_der)
+#print(Pn_der)
+#print(Pn_izq)
+#pause()
+
+rn=np.concatenate((rn_izq,rn_der),axis=0)
+
+
+# import pdb; pdb.set_trace()
+
+Pn=np.concatenate((Pn_izq,Pn_der),axis=0)
+
+
+iter=0
+itermax=20
+
+load=[None]*itermax
+resl=[None]*itermax
+dspL=[None]*itermax
+f_gl=[None]*itermax
+fz1a=[None]*itermax
+table=[None]*itermax
+modg=[None]*itermax
+CAR3D=[None]*itermax
+carg=[None]*itermax
+Resg=[None]*itermax
+usg=[None]*itermax
+f_lo=[None]*itermax
+tbl1=[None]*itermax
+
+
+MAVI=[None]*itermax
+MATV=[None]*itermax
+MOVI=[None]*itermax
+CAEX=[None]*itermax
+REVI=[None]*itermax
+DEPL=[None]*itermax
+RESVF=[None]*itermax
+
+while (error>tol) :
+
+	rn_ant=rn;
+
+	Pn_izq=Pn[0:6,]
+	Pn_der=Pn[6:12,]
+
+
+
+	# print("while")
+	# pause()
+
+	forcelist1=[];
+
+	forcelist1.append(_F(GROUP_NO=('force',),FX=100000, FY=0, MX=0))
+	forcelist1.append(_F(GROUP_NO=('desp_izq',),FX=Pn[0],FY=Pn[1],FZ=Pn[2],MX=Pn[3],MY=Pn[4],MZ=Pn[5],))
+	forcelist1.append(_F(GROUP_NO=('desp_der',),FX=Pn[6],FY=Pn[7],FZ=Pn[8],MX=Pn[9],MY=Pn[10],MZ=Pn[11],))
+
+
+	load[iter] = AFFE_CHAR_MECA(DDL_IMPO=(_F( DRX=0.0,
+			                                  DRY=0.0,
+			                                  DRZ=0.0,
+			                                  DX=0.0,
+			                                  DY=0.0,
+			                                  DZ=0.0,
+			                                  GROUP_NO=('fix')),
+										 ),
+	                      FORCE_NODALE=(forcelist1),
+	                      MODELE=model)
+
+	resl[iter] = MECA_STATIQUE(CARA_ELEM=elemprop,
+	                       CHAM_MATER=fieldmat,
+	                       EXCIT=_F(CHARGE=load[iter]),
+	                       MODELE=model,
+	                       OPTION='SIEF_ELGA')
+
+
+	dspL[iter] = CREA_CHAMP(NOM_CHAM='DEPL',
+	                      OPERATION='EXTR',
+	                      RESULTAT=resl[iter],
+	                      TYPE_CHAM='NOEU_DEPL_R')
+
+	f_gl[iter] = CALC_CHAMP(FORCE=('FORC_NODA', ),
+	                  RESULTAT=resl[iter],
+					  GROUP_MA='viga_grieta');
+
+
+	fz1a[iter] = CREA_CHAMP(  OPERATION='EXTR', TYPE_CHAM='NOEU_DEPL_R',
+	             NOM_CHAM='FORC_NODA', RESULTAT=f_gl[iter])
+
+	f1_a_izq=ReprAster2PythonLin(fz1a[iter],'desp_izq')
+	f1_a_der=ReprAster2PythonLin(fz1a[iter],'desp_der')
+
+
+	table[iter] = POST_RELEVE_T(ACTION=(_F(GROUP_NO=('desp_izq', ),
+	                             INTITULE='for_izq',
+	                             MOMENT=('DRX', 'DRY', 'DRZ'),
+	                             NOM_CHAM='FORC_NODA',
+	                             OPERATION=('EXTRACTION', ),
+	                             POINT=coord_izq,
+	                             RESULTANTE=('DX', 'DY', 'DZ'),
+	                             RESULTAT=f_gl[iter]),
+	                          _F(GROUP_NO=('desp_der', ),
+	                             INTITULE='for_der',
+	                             MOMENT=('DRX', 'DRY', 'DRZ'),
+	                             NOM_CHAM='FORC_NODA',
+	                             OPERATION=('EXTRACTION', ),
+	                             POINT=coord_der,
+	                             RESULTANTE=('DX', 'DY', 'DZ'),
+	                             RESULTAT=f_gl[iter])))
+
+
+	TT_g=table[iter].EXTR_TABLE()
+	aa_g=TT_g.values()
+	fx_g=aa_g['RESULT_X']
+	fy_g=aa_g['RESULT_Y']
+	fz_g=aa_g['RESULT_Z']
+	MX_g=aa_g['MOMENT_X']
+	MY_g=aa_g['MOMENT_Y']
+	MZ_g=aa_g['MOMENT_Z']
+
+	f_global_izq=np.array([(fx_g[0],fy_g[0],fz_g[0],MX_g[0],MY_g[0],MZ_g[0])])
+	f_global_der=np.array([(fx_g[1],fy_g[1],fz_g[1],MX_g[1],MY_g[1],MZ_g[1])])
+
+	IMPR_RESU(RESU=_F(RESULTAT=resl[iter]),
+	          UNITE=80)
+
+	IMPR_TABLE(FORMAT='TABLEAU',
+	       TABLE=table[iter],
+	       UNITE=9)
+
+
+	desp_viga2D_I=ReprAster2PythonLin (dspL[iter],'desp_izq')
+	desp_viga2D_D=ReprAster2PythonLin (dspL[iter],'desp_der')
+
+	lista1=[]
+	lista2=[]
+	lista1=calc_depl (desp_viga2D_I[:,0],'desp_izq',mailpyl,lista1)
+
+	lista2=calc_depl (desp_viga2D_D[:,0],'desp_der',mailpyl,lista2)
+
+
+	lista_tot=lista1+lista2
+
+	if tag == 1 :
+
+		modg[iter]=AFFE_MODELE(MAILLAGE=mesh_3D,#es necesario el iter?
+			                AFFE=(_F(GROUP_MA='All',
+			                         PHENOMENE='MECANIQUE',
+			                         MODELISATION='3D',),))
+
+		CAR3D[iter]=AFFE_CARA_ELEM(MASSIF=_F(#es necesario el iter?
+			    ANGL_REP=(0.0, ),
+			    GROUP_MA=('All', )),
+			    MODELE=mode_3D)
+
+		carg[iter]=AFFE_CHAR_MECA(DDL_IMPO=lista_tot,
+							MODELE=modg[iter])
+
+		# Linear system solving
+		Resg[iter] = MECA_STATIQUE(MODELE=modg[iter],
+						CHAM_MATER = field_3D,
+						CARA_ELEM=CAR3D[iter],
+						EXCIT = _F(CHARGE = carg[iter]))
+
+		usg[iter]=CREA_CHAMP(  OPERATION='EXTR', TYPE_CHAM='NOEU_DEPL_R',
+					 NOM_CHAM='DEPL', RESULTAT=Resg[iter])
+
+		f_lo[iter] = CALC_CHAMP(FORCE=('FORC_NODA', ),
+	                      RESULTAT=Resg[iter])
+
+
+		tbl1[iter] = POST_RELEVE_T(ACTION=(_F(GROUP_NO=('desp_izq', ),
+	                                 INTITULE='for_izq',
+	                                 MOMENT=('DRX', 'DRY', 'DRZ'),
+	                                 NOM_CHAM='FORC_NODA',
+	                                 OPERATION=('EXTRACTION', ),
+	                                 POINT=coord_izq,
+	                                 RESULTANTE=('DX', 'DY', 'DZ'),
+	                                 RESULTAT=f_lo[iter]),
+	                              _F(GROUP_NO=('desp_der', ),
+	                                 INTITULE='for_der',
+	                                 MOMENT=('DRX', 'DRY', 'DRZ'),
+	                                 NOM_CHAM='FORC_NODA',
+	                                 OPERATION=('EXTRACTION', ),
+	                                 POINT=coord_der,
+	                                 RESULTANTE=('DX', 'DY', 'DZ'),
+	                                 RESULTAT=f_lo[iter],)))
+
+		TT_l=tbl1[iter].EXTR_TABLE()
+		aa_l=TT_l.values()
+		fx_l=aa_l['RESULT_X']
+		fy_l=aa_l['RESULT_Y']
+		fz_l=aa_l['RESULT_Z']
+		MX_l=aa_l['MOMENT_X']
+		MY_l=aa_l['MOMENT_Y']
+		MZ_l=aa_l['MOMENT_Z']
+
+		f_local_izq=np.array([(fx_l[0],fy_l[0],fz_l[0],MX_l[0],MY_l[0],MZ_l[0])])
+		f_local_izq=f_local_izq.T
+		f_local_der=np.array([(fx_l[1],fy_l[1],fz_l[1],MX_l[1],MY_l[1],MZ_l[1])])
+		f_local_der=f_local_der.T
+
+
+		#print(f_local_izq)
+		#print(f_local_der)
+		#pause()
+		#print(f_global_izq)
+		#print(f_global_der)
+		#pause()
+		#print(Pn_izq)
+		#print(Pn_der)
+		#pause()
+
+		rn_izq=f_global_izq.T-f_local_izq-Pn_izq
+		rn_der=f_global_der.T-f_local_der-Pn_der
+
+		#print(rn_izq)
+		#print(rn_der)
+		#pause()
+
+
+		rn=np.concatenate((rn_izq,rn_der),axis=0)#juntar
+
+
+		#pdb.set_trace()
+		IMPR_RESU (FORMAT = 'MED',
+				 RESU = _F (RESULTAT=Resg[iter]),
+							UNITE=81);
+
+		IMPR_TABLE(FORMAT='TABLEAU',
+	           TABLE=tbl1[iter],
+	           UNITE=8)
+
+
+
+	else :
+
+
+
+
+		MAT    	= [None]*NPS
+		MAX    	= [None]*NPS
+		MO     	= [None]*NPS
+		FISS   	= [None]*NPS
+		MOX    	= [None]*NPS
+		CHF  	= [None]*NPS
+		CHM  	= [None]*NPS
+		CHAR   	= [None]*NPS
+		UTOT   	= [None]*NPS
+		SIF    	= [None]*NPS
+		CAE    	= [None]*NPS
+
+
+		FISS[0] = DEFI_FISS_XFEM(DEFI_FISS=_F(FORM_FISS='DEMI_PLAN',
+											DTAN=(0, 0, 1),
+		        							NORMALE=(1, 0, 0),
+	        								PFON=(Xfiss, 0.0, Zfiss)),
+	    						MAILLAGE=mesh_3D,MAILLAGE_GRILLE=grille)
+
+		for i in range(0,NPS) :
+
+
+			MO[i]=AFFE_MODELE(MAILLAGE=mesh_3D,
+		                      AFFE=(_F(TOUT='OUI',
+			                           PHENOMENE='MECANIQUE',
+			                           MODELISATION='3D',)))
+			#
+			#
+			# CAE[i]=AFFE_CARA_ELEM(MASSIF=_F(
+			# 	ANGL_REP=(0.0, ),
+			# 	GROUP_MA=('All', )),
+			# 	MODELE=MO[i])
+
+			MOX[i]=MODI_MODELE_XFEM(MODELE_IN=MO[i], FISSURE=FISS[i]);
+
+
+			CHM[i]=AFFE_MATERIAU(MAILLAGE=mesh_3D,
+			                  MODELE=MOX[i],
+			                  AFFE=_F(TOUT='OUI',MATER=mater,));
+
+
+			CHAR[i]=AFFE_CHAR_MECA(MODELE=MOX[i],
+			                  DDL_IMPO = lista_tot);
+
+
+
+			UTOT[i]=MECA_STATIQUE(MODELE=MOX[i],
+			              CHAM_MATER=CHM[i],
+						  CARA_ELEM=CAE[i],
+			              EXCIT=(_F(CHARGE=CHAR[i],),
+			                     ),)
+
+			SIF[i]=CALC_G(RESULTAT=UTOT[i],LISSAGE=_F(DEGRE=0, LISSAGE_G='LEGENDRE', LISSAGE_THETA='LEGENDRE'),
+			      OPTION='CALC_K_G',
+			      THETA=_F(FISSURE=FISS[i]),);
+
+			IMPR_TABLE(FORMAT='TABLEAU',
+			      TABLE=SIF[i],
+			      UNITE=10)
+
+			if (i!=NPS-1) :
+
+				FISS[i+1]=CO('FISS_'+str(i+1))
+
+				PROPA_FISS(	METHODE_PROPA='UPWIND',
+							MODELE=MOX[i],
+							FISSURE=_F(	FISS_ACTUELLE = FISS[i],
+										FISS_PROPAGEE = FISS[i+1],
+										TABLE = SIF[i]),
+							DA_MAX=DA,
+							LOI_PROPA = _F(LOI='PARIS',
+										   M=1,C=1,
+										   MATER=mater,   ),
+							COMP_LINE=_F(COEF_MULT_MINI=0.,
+										 COEF_MULT_MAXI=1.,
+										),
+							RAYON=RS,
+							);
+
+
+
+			else :
+
+				MAVI[iter]=POST_MAIL_XFEM(MODELE = MOX[i])
+
+				MAVI[iter] = DEFI_GROUP (reuse = MAVI[iter],
+											 MAILLAGE = MAVI[iter],
+											 CREA_GROUP_NO = _F (NOM = 'desp_izq',
+																 GROUP_MA = ('GAMMA_izq'),
+																 CRIT_NOEUD = 'TOUS'));
+
+				MAVI[iter] = DEFI_GROUP (reuse = MAVI[iter],
+											 MAILLAGE = MAVI[iter],
+											 CREA_GROUP_NO = _F (NOM = 'desp_der',
+																 GROUP_MA = ('GAMMA_der'),
+																 CRIT_NOEUD = 'TOUS'));
+
+				MATV[iter]=AFFE_MATERIAU(MAILLAGE=MAVI[iter],
+										  AFFE=_F(TOUT = 'OUI',
+										  MATER=mater))
+
+				MOVI[iter]=AFFE_MODELE(MAILLAGE=MAVI[iter],
+							AFFE=(	_F(GROUP_MA='All', PHENOMENE='MECANIQUE', MODELISATION='3D',),))
+									# _F(GROUP_MA=list2,PHENOMENE='MECANIQUE', MODELISATION='DIS_T')))
+				#
+				CAEX[iter]=AFFE_CARA_ELEM(MASSIF=_F(
+					ANGL_REP=(0.0, ),
+					GROUP_MA=('All', )),
+					MODELE=MOVI[iter])
+					# ,
+					# DISCRET_2D=(list22),)
+
+				REVI[iter]=POST_CHAM_XFEM(MODELE_VISU = MOVI[iter],
+										  RESULTAT = UTOT[i])
+
+				DEPL[iter] = CREA_CHAMP(OPERATION='EXTR', TYPE_CHAM='NOEU_DEPL_R',
+						                 NOM_CHAM='DEPL', RESULTAT=REVI[iter])
+
+				RESVF[iter] = CALC_CHAMP(CHAM_MATER=MATV[iter],
+											FORCE=('FORC_NODA'),
+											RESULTAT=REVI[iter],
+											TOUT_ORDRE='OUI')
+
+
+				tbl1[iter] = POST_RELEVE_T(ACTION=(_F(GROUP_NO=('desp_izq', ),
+			                                 INTITULE='for_izq',
+			                                 MOMENT=('DRX', 'DRY', 'DRZ'),
+			                                 NOM_CHAM='FORC_NODA',
+			                                 OPERATION=('EXTRACTION', ),
+			                                 POINT=coord_izq,
+			                                 RESULTANTE=('DX', 'DY', 'DZ'),
+			                                 RESULTAT=RESVF[iter]),
+			                              _F(GROUP_NO=('desp_der', ),
+			                                 INTITULE='for_der',
+			                                 MOMENT=('DRX', 'DRY', 'DRZ'),
+			                                 NOM_CHAM='FORC_NODA',
+			                                 OPERATION=('EXTRACTION', ),
+			                                 POINT=coord_der,
+			                                 RESULTANTE=('DX', 'DY', 'DZ'),
+			                                 RESULTAT=RESVF[iter],)))
+
+				TT_l=tbl1[iter].EXTR_TABLE()
+				aa_l=TT_l.values()
+				fx_l=aa_l['RESULT_X']
+				fy_l=aa_l['RESULT_Y']
+				fz_l=aa_l['RESULT_Z']
+				MX_l=aa_l['MOMENT_X']
+				MY_l=aa_l['MOMENT_Y']
+				MZ_l=aa_l['MOMENT_Z']
+
+				f_local_izq=np.array([(fx_l[0],fy_l[0],fz_l[0],MX_l[0],MY_l[0],MZ_l[0])])
+				f_local_izq=f_local_izq.T
+				f_local_der=np.array([(fx_l[1],fy_l[1],fz_l[1],MX_l[1],MY_l[1],MZ_l[1])])
+				f_local_der=f_local_der.T
+
+				rn_izq=f_global_izq.T-f_local_izq-Pn_izq
+				rn_der=f_global_der.T-f_local_der-Pn_der
+
+
+				rn=np.concatenate((rn_izq,rn_der),axis=0)#juntar
+
+
+				IMPR_TABLE(FORMAT='TABLEAU',
+			           TABLE=tbl1[iter],
+			           UNITE=8)
+
+
+
+				IMPR_RESU (FORMAT = 'MED',
+								 RESU = _F (RESULTAT=REVI[iter],
+								 			MAILLAGE=MAVI[iter],
+											NOM_RESU_MED= "Ul_%s" %(iter),),
+											UNITE=81);
+
+				# DETRUIRE (CONCEPT=_F(NOM=MAT[:],),)
+				DETRUIRE (CONCEPT=_F(NOM=FISS[:],),)
+				DETRUIRE (CONCEPT=_F(NOM=MO[:],),)
+				# DETRUIRE (CONCEPT=_F(NOM=CAE[:],),)
+				DETRUIRE (CONCEPT=_F(NOM=MOX[:],),)
+				DETRUIRE (CONCEPT=_F(NOM=CHM[:],),)
+				DETRUIRE (CONCEPT=_F(NOM=CHAR[:],),)
+				DETRUIRE (CONCEPT=_F(NOM=UTOT[:],),)
+				DETRUIRE (CONCEPT=_F(NOM=SIF[:],),)
+
+
+
+	if iter==0:
+		r0=rn
+		error=np.linalg.norm(rn)/np.linalg.norm(r0)
+
+	else:
+
+		error=np.linalg.norm(rn)/np.linalg.norm(r0)
+
+	if Aitken==0 :
+
+		mu=0.5;
+
+		pn_ant1=Pn;
+
+
+		Pn=Pn+rn
+
+
+		Pn=mu*Pn+(1-mu)*pn_ant1
+
+	else :
+
+
+
+		if iter==0 :
+
+			mu=1;
+
+			pn_ant1=Pn;
+
+
+			Pn=Pn+rn
+
+
+			Pn=mu*Pn+(1-mu)*pn_ant1
+
+
+
+		else:
+
+			if iter==1:
+
+				mu=1;
+
+				mu_ant=mu;
+
+				pn_ant1=Pn;
+
+
+				Pn=Pn+rn
+
+
+				Pn=mu*Pn+(1-mu)*pn_ant1
+
+
+
+			else :
+
+				mu_ant=mu;
+
+
+				mu=-mu_ant*np.dot(np.transpose(rn_ant),(rn-rn_ant)) / (np.linalg.norm((rn-rn_ant))**2)
+
+				mu=np.asscalar(mu)
+
+				pn_ant1=Pn;
+
+
+				Pn=Pn+rn
+
+
+				Pn=mu*Pn+(1-mu)*pn_ant1
+
+
+	print(iter)
+	print(error)
+	print(mu)
+	print('--------')
+
+	iter=iter+1
+
+	f = open(archivo_parc_1, "r")
+	contents = f.readlines()
+	f.close()
+
+	#### contents.insert(1, ("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (count,alpha_i,alpha_j,XFiss,YFiss,tag_in,ax,NPS,tol,itermax,error_local,err_gamma,error,iter,counter)))
+	rn_print=rn[:,0]
+	contents.insert(1, ("%s,%s,%s\n" % (iter,error,mu)))
+	f = open(archivo_parc_1, "w")
+	contents = "".join(contents)
+	f.write(contents)
+	f.close()
+
+	#cambbiar al final de la impresion de resultados
+
+	#pause()
+
+
+f = open(archivo_parc_1, "r")
+contents = f.readlines()
+f.close()
+
+#### contents.insert(1, ("%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" % (count,alpha_i,alpha_j,XFiss,YFiss,tag_in,ax,NPS,tol,itermax,error_local,err_gamma,error,iter,counter)))
+
+contents.insert(1, ("---------------------------------------------\n"))
+f = open(archivo_parc_1, "w")
+contents = "".join(contents)
+f.write(contents)
+f.close()
+
+FIN()

@@ -1,0 +1,46 @@
+P actions make_etude
+P aster_root /opt/aster
+P consbtc oui
+P corefilesize unlimited
+P cpresok RESNOOK
+P debug nodebug
+P display nazio-work:0
+P facmtps 1
+P lang en
+P mclient nazio-work
+P memjob 4096000
+P memory_limit 4000.0
+P mode interactif
+P mpi_nbcpu 1
+P mpi_nbnoeud 1
+P nbmaxnook 5
+P ncpus 0
+P noeud localhost
+P nomjob salida_jaque_
+P origine ASTK 2019.0.final
+P platform LINUX64
+P profastk nazio@nazio-work:/home/nazio/Desktop/Matias/no_intrusivo/salida_jaque_.astk
+P protocol_copyfrom asrun.plugins.server.SCPServer
+P protocol_copyto asrun.plugins.server.SCPServer
+P protocol_exec asrun.plugins.server.SSHServer
+P proxy_dir /tmp
+P rep_trav /tmp/nazio-nazio-work-interactif_4138
+P serveur localhost
+P soumbtc oui
+P time_limit 24000.0
+P tpsjob 401
+P uclient nazio
+P username nazio
+P version stable
+A args 
+A memjeveux 500.0
+A tpmax 24000.0
+F comm /home/nazio/Desktop/Matias/no_intrusivo/Stage_1.comm D  1
+F mmed /home/nazio/Desktop/Matias/no_intrusivo/global_1D_500.med D  20
+F mmed /home/nazio/Desktop/Matias/no_intrusivo/local_500.med D  21
+F mmed /home/nazio/Desktop/Matias/no_intrusivo/grid_rec_1000.med D  22
+F rmed /home/nazio/Desktop/Matias/no_intrusivo/salida_lineal_new.rmed R  80
+F libr /home/nazio/Desktop/Matias/no_intrusivo/salida_local_3D_new.rmed R  81
+F libr /home/nazio/Desktop/Matias/no_intrusivo/fuerzas_nodales_local R  8
+F libr /home/nazio/Desktop/Matias/no_intrusivo/fuerzas_nodales_global R  9
+F libr /home/nazio/Desktop/Matias/no_intrusivo/lib_energia R  10
